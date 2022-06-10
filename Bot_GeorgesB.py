@@ -1,9 +1,10 @@
+from datetime import datetime
 from os import path
 # Il importe le module de journalisation.
 import logging
 import configparser
 from Class_Bot import Message_Utilisateur_Private as MUP, Message_Utilisateur_Channel as MUC
-from telegram import ParseMode, Update, InlineKeyboardMarkup, InlineKeyboardButton, Bot, PhotoSize
+from telegram import ParseMode, Update, InlineKeyboardMarkup, InlineKeyboardButton, Bot, PhotoSize, ChatJoinRequest
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -11,6 +12,7 @@ from telegram.ext import (
     Filters,
     ConversationHandler,
     CallbackQueryHandler,
+    ChatJoinRequestHandler,
     CallbackContext,
 )
 
@@ -18,7 +20,7 @@ import traceback
 import html
 import json
 
-ETAGE, APPT, COURRIEL, NOM, DATA_END, END_CONV = range(6)
+ETAGE, APPT, COURRIEL, NOM, INVITATION, DATA_END, END_CONV = range(7)
 
 DICO_COPRO = {"COPRO_NOM":None, "COPRO_COURRIEL":None, "COPRO_APPT":None, "COPRO_ETAGE":None}
 print(DICO_COPRO)
@@ -150,21 +152,28 @@ def next_get_copro_courriel(update, context) -> int :
 def get_copro_nom(update, context) -> int :
     DICO_COPRO["COPRO_NOM"] = update.message.text
     print(DICO_COPRO["COPRO_NOM"])
-    update.message.reply_text("Terminé  :)")
+    update.message.reply_text("/creer  :)")
     print(DICO_COPRO)
-    return ConversationHandler.END
+    return INVITATION
 
 def next_get_copro_nom(update, context) -> int :
     DICO_COPRO["COPRO_NOM"] = "NSP"
     print(DICO_COPRO["COPRO_NOM"])
-    update.message.reply_text("Terminé  :)")
+    update.message.reply_text("/creer  :)")
     print(DICO_COPRO)
-    return ConversationHandler.END 
+    return INVITATION 
 
 def get_copro_end_conv (update, context):
     update.message.reply_text("Quel est votre courriel :\n Pour passer, tapez /suivant")
     return END_CONV
 
+def invitation_copro_to_chat(update, context):
+    print("plop")
+    copro_bio = "bla bla bla"
+    invit_link = ChatJoinRequest(chat=CHATID_COPRO, from_user=update.effective_message.chat.id, date=datetime.now(), bio=copro_bio, invite_link=config_bot["BOT_INFO"]["BOT_INVITATION_LINK"])
+    #invit_link (chat=CHATID_COPRO, from_user=update.effective_message.chat.id, date=datetime, bio=copro_bio, invite_link=config_bot["BOT_INFO"]["BOT_INVITATION_LINK"])
+    print(invit_link)
+    return invit_link, ConversationHandler.END 
 
 
 def error_handler(update: Update, context) -> None:
@@ -212,6 +221,9 @@ conv_inscription_handler = ConversationHandler(
                     MessageHandler(Filters.text & ~Filters.command, get_copro_nom),
                     CommandHandler('suivant', next_get_copro_nom)
                 ],
+            INVITATION: [
+                    CommandHandler('creer', invitation_copro_to_chat)
+                ],
         },
         fallbacks=[CommandHandler('Quitter', get_copro_end_conv)],
     )
@@ -225,7 +237,8 @@ disp.add_handler(CommandHandler("help",help))
 disp.add_handler(CommandHandler("contact",contact))
 disp.add_handler(CommandHandler("contenu",contenu))
 disp.add_handler(MessageHandler(Filters.text & ~Filters.command,recup_message_user))
-#disp.add_error_handler(error_handler)
+disp.add_handler(ChatJoinRequestHandler(invitation_copro_to_chat))
+disp.add_error_handler(error_handler)
 
 updater.start_polling()
 updater.idle()
