@@ -13,7 +13,7 @@ from telegram.ext import (
     ConversationHandler,
     CallbackQueryHandler,
     ChatJoinRequestHandler,
-    CallbackContext,
+    CallbackContext
 )
 
 import traceback
@@ -108,7 +108,7 @@ def hello_copro(update,context) -> int :
             ],
         ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text('A quel étage habitez vous :', reply_markup=reply_markup)
+    update.message.reply_text('A quel étage habitez vous ? :', reply_markup=reply_markup)
     return ETAGE
 
 
@@ -128,13 +128,13 @@ def get_copro_etage(update, context) -> int :
 def get_copro_appt(update, context) -> int :
     DICO_COPRO["COPRO_APPT"] = update.message.text
     print(DICO_COPRO["COPRO_APPT"])
-    update.message.reply_text("A quel est votre courriel ? :\n Pour passer, tapez /suivant")
+    update.message.reply_text("Quel est votre courriel ? :\n Pour passer, tapez /suivant")
     return COURRIEL
 
 def next_get_copro_appt(update, context) -> int :
     DICO_COPRO["COPRO_APPT"] = "NSP"
     print(DICO_COPRO["COPRO_APPT"])
-    update.message.reply_text("A quel est votre courriel ? :\n Pour passer, tapez /suivant")
+    update.message.reply_text("Quel est votre courriel ? :\n Pour passer, tapez /suivant")
     return COURRIEL
 
 def get_copro_courriel(update, context) -> int :
