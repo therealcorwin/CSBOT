@@ -1,6 +1,6 @@
 from datetime import datetime
 from os import path
-# Il importe le module de journalisation.
+import mysql.connector as Mariadb
 import logging
 import configparser
 from Class_Bot import Message_Utilisateur_Private as MUP, Message_Utilisateur_Channel as MUC
@@ -15,23 +15,36 @@ from telegram.ext import (
     ChatJoinRequestHandler,
     CallbackContext
 )
-
 import traceback
 import html
 import json
 
+
+""" 
+
+    INITIALISATION VARIABLES
+
+"""
 ETAGE, APPT, COURRIEL, NOM, INVITATION, DATA_END, END_CONV = range(7)
-
 DICO_COPRO = {"COPRO_NOM":None, "COPRO_COURRIEL":None, "COPRO_APPT":None, "COPRO_ETAGE":None}
-print(DICO_COPRO)
 
+""" 
+
+   INITIALISATION LOGGING
+
+"""
 # Enable logging
 logging.basicConfig(
-    filename='Bot.log', filemode='a',
+    filename='Bot.log', filemode='a', encoding='utf-8',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%d-%b-%Y %H:%M:%S'
 )
 logger = logging.getLogger(__name__)
 
+"""
+
+    LECTURE FICHIER DE CONFIGURATION
+
+"""
 if  path.exists("config.ini"):
     logging.info("Lecture du fichier de configuration")
     config_bot = configparser.ConfigParser()
@@ -40,6 +53,36 @@ else:
    logger.error("Le fichier config.ini n'existe pas")
    exit("Le fichier config.ini n'existe pas")
 
+def connexion_to_database() -> Mariadb:
+    try:
+        MARIADB_CNX = Mariadb.connect(
+            user=config_bot["DATABASE"]["USER"],
+            password=config_bot["DATABASE"]["PASSWORD"],
+            host=config_bot["DATABASE"]["HOST"],
+            port=config_bot["DATABASE"]["PORT"],
+            database=config_bot["DATABASE"]["DATABASE"]
+            )
+        MARIADB_CNX.cursor()
+        logging.info("Connexion à la base de données réussie")
+        return MARIADB_CNX
+    except:
+        logging.critical("Impossible de se connecter à la base de données")
+        return False
+
+def check_database_connnexion (MARIADB_CNX):
+    if (MARIADB_CNX.is_connected()) :
+        logging.info("Check database connexion : ONLINE")
+        return True
+    else:
+        logging.critical("Check database connexion : OFFLINE")
+        return False
+    
+
+#def push_data_stats() :
+#    if check_database_connnexion() == False:
+    
+connexion_to_database()
+check_database_connnexion (connexion_to_database())
 
 TOKEN_BOT_TELEGRAM = config_bot["TELEGRAM"]["TOKEN_BOT"]
 CHATID_COPRO = config_bot["CHAT_COPRO_INFO"]["CHAT_COPRO_ID"]
