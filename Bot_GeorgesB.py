@@ -1,7 +1,9 @@
 from datetime import datetime
+from encodings import utf_8
 from os import path
 import mysql.connector as Mariadb
 import logging
+from logging.config import fileConfig
 import configparser
 from Class_Bot import Message_Utilisateur_Private as MUP, Message_Utilisateur_Channel as MUC
 from telegram import ParseMode, Update, InlineKeyboardMarkup, InlineKeyboardButton, Bot, PhotoSize, ChatJoinRequest
@@ -34,23 +36,27 @@ DICO_COPRO = {"COPRO_NOM":None, "COPRO_COURRIEL":None, "COPRO_APPT":None, "COPRO
 
 """
 # Enable logging
-logging.basicConfig(
-    filename='Bot.log', filemode='a', encoding='utf-8',
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%d-%b-%Y %H:%M:%S'
-)
-logger = logging.getLogger(__name__)
+#logging.basicConfig(
+#    filename='Bot.log', filemode='a', encoding='utf-8',
+#    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%d-%b-%Y %H:%M:%S'
+#)
+#logger = logging.getLogger(__name__)
 
+logging.config.fileConfig("Logging.conf",encoding="utf_8")
+botlog = logging.getLogger("botlog")
+dbchecklog = logging.getLogger("dbcheck")
+dbdatalog = logging.getLogger("dbdata")
 """
 
     LECTURE FICHIER DE CONFIGURATION
 
 """
 if  path.exists("config.ini"):
-    logging.info("Lecture du fichier de configuration")
+    botlog.info("Lecture du fichier de configuration")
     config_bot = configparser.ConfigParser()
     config_bot.read("config.ini")
 else: 
-   logger.error("Le fichier config.ini n'existe pas")
+   botlog.error("Le fichier config.ini n'existe pas")
    exit("Le fichier config.ini n'existe pas")
 
 def connexion_to_database() -> Mariadb:
@@ -63,18 +69,18 @@ def connexion_to_database() -> Mariadb:
             database=config_bot["DATABASE"]["DATABASE"]
             )
         MARIADB_CNX.cursor()
-        logging.info("Connexion à la base de données réussie")
+        dbdatalog.info("Connexion à la base de données réussie")
         return MARIADB_CNX
     except:
-        logging.critical("Impossible de se connecter à la base de données")
+        dbdatalog.critical("Impossible de se connecter à la base de données")
         return False
 
 def check_database_connnexion (MARIADB_CNX):
     if (MARIADB_CNX.is_connected()) :
-        logging.info("Check database connexion : ONLINE")
+        dbchecklog.info("Check database connexion : ONLINE")
         return True
     else:
-        logging.critical("Check database connexion : OFFLINE")
+        dbchecklog.critical("Check database connexion : OFFLINE")
         return False
     
 
@@ -119,7 +125,7 @@ def recup_message_user(update, context):
                     message_author_first_name = update.effective_message.chat.first_name, 
                     message_author_last_name = update.effective_message.chat.last_name 
                 )
-        logger.info("Creation d'un objet MUP")
+        botlog.info("Creation d'un objet MUP")
     elif update.effective_message.chat.type == "channel":
         plip = MUC(  
                     message_text = update.effective_message.text , 
@@ -130,9 +136,9 @@ def recup_message_user(update, context):
                     message_from_chat_id = update.effective_message.chat.id,
                     message_full_authorname = update.effective_message.author_signature 
                 )
-        logger.info("Creation d'un objet MUC") 
+        botlog.info("Creation d'un objet MUC") 
     else:
-        logger.info("Aucune creation d'objet") 
+        botlog.info("Aucune creation d'objet") 
 
 def hello_copro(update,context) -> int :
     infobot = botcopro.get_user_profile_photos(config_bot["BOT_INFO"]["BOT_ID"])
@@ -222,7 +228,7 @@ def invitation_copro_to_chat(update, context):
 def error_handler(update: Update, context) -> None:
     """Log the error and send a telegram message to notify the developer."""
     # Log the error before we do anything else, so we can see it even if something breaks.
-    logger.error(msg="Exception while handling an update:", exc_info=context.error)
+    botlog.error(msg="Exception while handling an update:", exc_info=context.error)
 
     # traceback.format_exception returns the usual python message about an exception, but as a
     # list of strings rather than a single string, so we have to join them together.
