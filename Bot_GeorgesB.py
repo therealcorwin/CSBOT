@@ -1,5 +1,4 @@
 from datetime import datetime
-from encodings import utf_8
 from os import path
 from types import NoneType
 import mysql.connector as Mariadb
@@ -30,6 +29,7 @@ import json
 """
 ETAGE, APPT, COURRIEL, NOM, INVITATION, DATA_END, END_CONV = range(7)
 DICO_COPRO = {"COPRO_NOM":None, "COPRO_COURRIEL":None, "COPRO_APPT":None, "COPRO_ETAGE":None}
+
 """ 
 
    INITIALISATION LOGGING
@@ -47,7 +47,7 @@ else:
 
 """
 
-    LECTURE FICHIER DE CONFIGURATION
+    LECTURE FICHIER DE CONFIGURATION DU BOT
 
 """
 if  path.exists("config.ini"):
@@ -98,7 +98,6 @@ def push_data_stats(MARIADB_CNX,MARIADB_CURSOR, USER_ID, USER_NAME, USER_CHATNAM
     
 MARIADB_CNX = connexion_to_database()
 MARIADB_CURSOR = MARIADB_CNX.cursor()
-check_database_connnexion (MARIADB_CNX)
 
 """
 
@@ -131,6 +130,7 @@ def contenu(update, context):
 def recup_message_user(update, context):
     print(update.effective_message)
     if update.effective_message.chat.type == "private":
+        botlog.info("Creation d'un objet MUP")
         plop = MUP(  
                     message_text = update.effective_message.text , 
                     message_type = update.effective_message.chat.type ,
@@ -140,14 +140,9 @@ def recup_message_user(update, context):
                     message_author_first_name = update.effective_message.chat.first_name, 
                     message_author_last_name = update.effective_message.chat.last_name
                 )
-        print(plop.message_date)
-        print(plop.message_author_first_name)
-        print(plop.message_author_last_name)
-        zoubi=plop.message_author_last_name
-        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plop.message_author_id, plop.message_author_first_name, zoubi,datetime.now())
-
-        botlog.info("Creation d'un objet MUP")
+        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plop.message_author_id, plop.message_author_first_name, plop.message_author_last_name,plop.message_date)       
     elif update.effective_message.chat.type == "channel":
+        botlog.info("Creation d'un objet MUC") 
         plip = MUC(  
                     message_text = update.effective_message.text , 
                     message_type = update.effective_message.chat.type ,
@@ -157,9 +152,7 @@ def recup_message_user(update, context):
                     message_from_chat_id = update.effective_message.chat.id,
                     message_full_authorname = update.effective_message.author_signature 
                 )
-        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plip.message_from_chat_id, plip.message_full_authorname, plip.message_full_authorname,datetime.now())
-
-        botlog.info("Creation d'un objet MUC") 
+        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plip.message_from_chat_id, plip.message_full_authorname, plip.message_full_authorname,plip.message_date)    
     else:
         botlog.info("Aucune creation d'objet") 
 
