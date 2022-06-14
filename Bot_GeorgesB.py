@@ -1,6 +1,7 @@
 from datetime import datetime
 from encodings import utf_8
 from os import path
+from types import NoneType
 import mysql.connector as Mariadb
 import logging
 from logging.config import fileConfig
@@ -29,23 +30,21 @@ import json
 """
 ETAGE, APPT, COURRIEL, NOM, INVITATION, DATA_END, END_CONV = range(7)
 DICO_COPRO = {"COPRO_NOM":None, "COPRO_COURRIEL":None, "COPRO_APPT":None, "COPRO_ETAGE":None}
-
 """ 
 
    INITIALISATION LOGGING
 
 """
 # Enable logging
-#logging.basicConfig(
-#    filename='Bot.log', filemode='a', encoding='utf-8',
-#    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%d-%b-%Y %H:%M:%S'
-#)
-#logger = logging.getLogger(__name__)
+if  path.exists("Logging.conf"):
+    logging.config.fileConfig("Logging.conf",encoding="utf_8")
+    botlog = logging.getLogger("BOTLOG")
+    dbchecklog = logging.getLogger("DBCHECK")
+    dbdatalog = logging.getLogger("DBDATA")
+    botlog.info("Lecture du fichier de configuration de la journalisation")
+else: 
+   exit("Le fichier Logging.conf n'existe pas")
 
-logging.config.fileConfig("Logging.conf",encoding="utf_8")
-botlog = logging.getLogger("botlog")
-dbchecklog = logging.getLogger("dbcheck")
-dbdatalog = logging.getLogger("dbdata")
 """
 
     LECTURE FICHIER DE CONFIGURATION
@@ -59,6 +58,11 @@ else:
    botlog.error("Le fichier config.ini n'existe pas")
    exit("Le fichier config.ini n'existe pas")
 
+"""
+    
+    CONNEXION A LA BDD
+
+"""
 def connexion_to_database() -> Mariadb:
     try:
         MARIADB_CNX = Mariadb.connect(
@@ -68,7 +72,6 @@ def connexion_to_database() -> Mariadb:
             port=config_bot["DATABASE"]["PORT"],
             database=config_bot["DATABASE"]["DATABASE"]
             )
-        MARIADB_CNX.cursor()
         dbdatalog.info("Connexion à la base de données réussie")
         return MARIADB_CNX
     except:
@@ -84,12 +87,24 @@ def check_database_connnexion (MARIADB_CNX):
         return False
     
 
-#def push_data_stats() :
-#    if check_database_connnexion() == False:
+def push_data_stats(MARIADB_CNX,MARIADB_CURSOR, USER_ID, USER_NAME, USER_CHATNAME, USER_LAST_MESSAGE_TIME) :
+    if check_database_connnexion(MARIADB_CNX) == False:
+       connexion_to_database()
+    else:
+        DATA_STATS = 'INSERT INTO STATS (USER_ID, USER_NAME, USER_CHATNAME, USER_LAST_MESSAGE_TIME) VALUES (%s,%s,%s,%s)'
+        DATA_STATS_DATA = (USER_ID, USER_NAME, USER_CHATNAME, USER_LAST_MESSAGE_TIME)
+        MARIADB_CURSOR.execute(DATA_STATS, DATA_STATS_DATA)
+        MARIADB_CNX.commit()
     
-connexion_to_database()
-check_database_connnexion (connexion_to_database())
+MARIADB_CNX = connexion_to_database()
+MARIADB_CURSOR = MARIADB_CNX.cursor()
+check_database_connnexion (MARIADB_CNX)
 
+"""
+
+    CODE BOT
+
+"""
 TOKEN_BOT_TELEGRAM = config_bot["TELEGRAM"]["TOKEN_BOT"]
 CHATID_COPRO = config_bot["CHAT_COPRO_INFO"]["CHAT_COPRO_ID"]
 
@@ -123,8 +138,14 @@ def recup_message_user(update, context):
                     message_date = update.effective_message.date, 
                     message_author_id = update.effective_message.chat.id,
                     message_author_first_name = update.effective_message.chat.first_name, 
-                    message_author_last_name = update.effective_message.chat.last_name 
+                    message_author_last_name = update.effective_message.chat.last_name
                 )
+        print(plop.message_date)
+        print(plop.message_author_first_name)
+        print(plop.message_author_last_name)
+        zoubi=plop.message_author_last_name
+        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plop.message_author_id, plop.message_author_first_name, zoubi,datetime.now())
+
         botlog.info("Creation d'un objet MUP")
     elif update.effective_message.chat.type == "channel":
         plip = MUC(  
@@ -136,11 +157,14 @@ def recup_message_user(update, context):
                     message_from_chat_id = update.effective_message.chat.id,
                     message_full_authorname = update.effective_message.author_signature 
                 )
+        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plip.message_from_chat_id, plip.message_full_authorname, plip.message_full_authorname,datetime.now())
+
         botlog.info("Creation d'un objet MUC") 
     else:
         botlog.info("Aucune creation d'objet") 
 
 def hello_copro(update,context) -> int :
+    botlog.info(f"Initialisation inscription chat copro pour le user : {update.effective_user.id}")
     infobot = botcopro.get_user_profile_photos(config_bot["BOT_INFO"]["BOT_ID"])
     taille= PhotoSize(config_bot["BOT_INFO"]["BOT_PHOTO_FILE_ID"], config_bot["BOT_INFO"]["BOT_PHOTO_FILE_ID_UNIQUE"], "50", "50")
     botcopro.send_photo(chat_id=update.effective_message.chat.id, photo=taille, caption="Bonjour, je suis Georges Bot, l'assitant virtuel de la copro.\n\nAfin de mieux répondre à vos demandes, je vais vous demander quelques informations.\n\nVous étes libre de ne pas répondre.\n\n")
@@ -167,7 +191,7 @@ def get_copro_etage(update, context) -> int :
     # CallbackQueries need to be answered, even if no notification to the user is needed
     # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
     query.answer()
-
+    botlog.info(f"le user : {update.effective_user.id} à choisit Etage : {query.data}")
     DICO_COPRO["COPRO_ETAGE"] = query.data
     print(DICO_COPRO["COPRO_ETAGE"])
     query.edit_message_text(text="Quel est le numéro de votre appartement ?\n Pour passer, tapez /suivant")
@@ -176,30 +200,35 @@ def get_copro_etage(update, context) -> int :
 
 def get_copro_appt(update, context) -> int :
     DICO_COPRO["COPRO_APPT"] = update.message.text
+    botlog.info(f"le user : {update.effective_user.id} à saisit Appartement : {update.message.text}")
     print(DICO_COPRO["COPRO_APPT"])
     update.message.reply_text("Quel est votre courriel ? :\n Pour passer, tapez /suivant")
     return COURRIEL
 
 def next_get_copro_appt(update, context) -> int :
     DICO_COPRO["COPRO_APPT"] = "NSP"
+    botlog.info(f"le user : {update.effective_user.id} à saisit Appartement : NSP")
     print(DICO_COPRO["COPRO_APPT"])
     update.message.reply_text("Quel est votre courriel ? :\n Pour passer, tapez /suivant")
     return COURRIEL
 
 def get_copro_courriel(update, context) -> int :
     DICO_COPRO["COPRO_COURRIEL"] = update.message.text
+    botlog.info(f"le user : {update.effective_user.id} à saisit Courriel : {update.message.text}")
     print(DICO_COPRO["COPRO_COURRIEL"])
     update.message.reply_text("Quel est votre nom ? :\n Pour passer, tapez /suivant")
     return NOM 
 
 def next_get_copro_courriel(update, context) -> int :
     DICO_COPRO["COPRO_COURRIEL"] = "NSP"
+    botlog.info(f"le user : {update.effective_user.id} à saisit Courriel : NSP")
     print(DICO_COPRO["COPRO_COURRIEL"])
     update.message.reply_text("Quel est votre nom ? :\n Pour passer, tapez /suivant")
     return NOM 
 
 def get_copro_nom(update, context) -> int :
     DICO_COPRO["COPRO_NOM"] = update.message.text
+    botlog.info(f"le user : {update.effective_user.id} à saisit Nom : {update.message.text}")
     print(DICO_COPRO["COPRO_NOM"])
     update.message.reply_text("/creer  :)")
     print(DICO_COPRO)
@@ -207,6 +236,7 @@ def get_copro_nom(update, context) -> int :
 
 def next_get_copro_nom(update, context) -> int :
     DICO_COPRO["COPRO_NOM"] = "NSP"
+    botlog.info(f"le user : {update.effective_user.id} à saisit Nom : NSP")
     print(DICO_COPRO["COPRO_NOM"])
     update.message.reply_text("/creer  :)")
     print(DICO_COPRO)
@@ -290,3 +320,4 @@ disp.add_error_handler(error_handler)
 
 updater.start_polling()
 updater.idle()
+
