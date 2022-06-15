@@ -1,4 +1,5 @@
 from datetime import datetime
+from email import message
 from os import path
 from types import NoneType
 import mysql.connector as Mariadb
@@ -14,8 +15,7 @@ from telegram.ext import (
     Filters,
     ConversationHandler,
     CallbackQueryHandler,
-    ChatJoinRequestHandler,
-    CallbackContext
+    ChatJoinRequestHandler
 )
 import traceback
 import html
@@ -70,7 +70,8 @@ def connexion_to_database() -> Mariadb:
             password=config_bot["DATABASE"]["PASSWORD"],
             host=config_bot["DATABASE"]["HOST"],
             port=config_bot["DATABASE"]["PORT"],
-            database=config_bot["DATABASE"]["DATABASE"]
+            database=config_bot["DATABASE"]["DATABASE"],
+            autocommit=True
             )
         dbdatalog.info("Connexion à la base de données réussie")
         return MARIADB_CNX
@@ -87,14 +88,13 @@ def check_database_connnexion (MARIADB_CNX):
         return False
     
 
-def push_data_stats(MARIADB_CNX,MARIADB_CURSOR, USER_ID, USER_NAME, USER_CHATNAME, USER_LAST_MESSAGE_TIME) :
+def push_data_stats(MARIADB_CNX,MARIADB_CURSOR, USER_ID, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME, TYPE_MESSAGE, USER_LAST_MESSAGE_TIME) :
     if check_database_connnexion(MARIADB_CNX) == False:
        connexion_to_database()
     else:
-        DATA_STATS = 'INSERT INTO STATS (USER_ID, USER_NAME, USER_CHATNAME, USER_LAST_MESSAGE_TIME) VALUES (%s,%s,%s,%s)'
-        DATA_STATS_DATA = (USER_ID, USER_NAME, USER_CHATNAME, USER_LAST_MESSAGE_TIME)
+        DATA_STATS = 'INSERT INTO STATS (USER_ID, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME, TYPE_MESSAGE, USER_LAST_MESSAGE_TIME) VALUES (%s,%s,%s,%s,%s,%s)'
+        DATA_STATS_DATA = (USER_ID, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME,TYPE_MESSAGE, USER_LAST_MESSAGE_TIME )
         MARIADB_CURSOR.execute(DATA_STATS, DATA_STATS_DATA)
-        MARIADB_CNX.commit()
     
 MARIADB_CNX = connexion_to_database()
 MARIADB_CURSOR = MARIADB_CNX.cursor()
@@ -140,7 +140,7 @@ def recup_message_user(update, context):
                     message_author_first_name = update.effective_message.chat.first_name, 
                     message_author_last_name = update.effective_message.chat.last_name
                 )
-        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plop.message_author_id, plop.message_author_first_name, plop.message_author_last_name,plop.message_date)       
+        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plop.message_author_id, plop.message_author_first_name, plop.message_author_last_name,plop.message_full_authorname,update.effective_message.chat.type,plop.message_date)       
     elif update.effective_message.chat.type == "channel":
         botlog.info("Creation d'un objet MUC") 
         plip = MUC(  
@@ -152,7 +152,7 @@ def recup_message_user(update, context):
                     message_from_chat_id = update.effective_message.chat.id,
                     message_full_authorname = update.effective_message.author_signature 
                 )
-        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plip.message_from_chat_id, plip.message_full_authorname, plip.message_full_authorname,plip.message_date)    
+        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plip.message_full_authorname, "" , "" , plip.message_full_authorname,update.effective_message.chat.type,plip.message_date)    
     else:
         botlog.info("Aucune creation d'objet") 
 
