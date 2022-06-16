@@ -1,7 +1,5 @@
 from datetime import datetime
-from email import message
 from os import path
-from types import NoneType
 import mysql.connector as Mariadb
 import logging
 from logging.config import fileConfig
