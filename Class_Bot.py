@@ -7,6 +7,7 @@ class Message_Utilisateur_Private:
     message_id: int
     message_date: int
     message_author_id: int
+    message_telegram_user_name: str = None
     message_author_first_name: str = None
     message_author_last_name: str = None
     message_full_authorname: str = None
