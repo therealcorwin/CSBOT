@@ -86,12 +86,12 @@ def check_database_connnexion (MARIADB_CNX):
         return False
     
 
-def push_data_stats(MARIADB_CNX,MARIADB_CURSOR, USER_ID, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME, TYPE_MESSAGE, USER_LAST_MESSAGE_TIME) :
+def push_data_stats(MARIADB_CNX,MARIADB_CURSOR, USER_ID,TELEGRAM_USER_NAME, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME, TYPE_MESSAGE, USER_LAST_MESSAGE_TIME) :
     if check_database_connnexion(MARIADB_CNX) == False:
        connexion_to_database()
     else:
-        DATA_STATS = 'INSERT INTO STATS (USER_ID, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME, TYPE_MESSAGE, USER_LAST_MESSAGE_TIME) VALUES (%s,%s,%s,%s,%s,%s)'
-        DATA_STATS_DATA = (USER_ID, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME,TYPE_MESSAGE, USER_LAST_MESSAGE_TIME )
+        DATA_STATS = 'INSERT INTO STATS (USER_ID, TELEGRAM_USER_NAME, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME, TYPE_MESSAGE, USER_LAST_MESSAGE_TIME) VALUES (%s,%s,%s,%s,%s,%s,%s)'
+        DATA_STATS_DATA = (USER_ID, TELEGRAM_USER_NAME, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME,TYPE_MESSAGE, USER_LAST_MESSAGE_TIME )
         MARIADB_CURSOR.execute(DATA_STATS, DATA_STATS_DATA)
     
 MARIADB_CNX = connexion_to_database()
@@ -132,13 +132,14 @@ def recup_message_user(update, context):
         plop = MUP(  
                     message_text = update.effective_message.text , 
                     message_type = update.effective_message.chat.type ,
-                    message_id = update.effective_message.message_id, 
+                    message_id = update.effective_message.message_id,
+                    message_telegram_user_name = update.effective_message.chat.username, 
                     message_date = update.effective_message.date, 
                     message_author_id = update.effective_message.chat.id,
                     message_author_first_name = update.effective_message.chat.first_name, 
                     message_author_last_name = update.effective_message.chat.last_name
                 )
-        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plop.message_author_id, plop.message_author_first_name, plop.message_author_last_name,plop.message_full_authorname,update.effective_message.chat.type,plop.message_date)       
+        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plop.message_author_id,plop.message_telegram_user_name, plop.message_author_first_name, plop.message_author_last_name,plop.message_full_authorname,update.effective_message.chat.type,plop.message_date)       
     elif update.effective_message.chat.type == "channel":
         botlog.info("Creation d'un objet MUC") 
         plip = MUC(  
@@ -150,7 +151,7 @@ def recup_message_user(update, context):
                     message_from_chat_id = update.effective_message.chat.id,
                     message_full_authorname = update.effective_message.author_signature 
                 )
-        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plip.message_full_authorname, "" , "" , plip.message_full_authorname,update.effective_message.chat.type,plip.message_date)    
+        push_data_stats(MARIADB_CNX,MARIADB_CURSOR, plip.message_full_authorname,"", "" , "" , plip.message_full_authorname,update.effective_message.chat.type,plip.message_date)    
     else:
         botlog.info("Aucune creation d'objet") 
 
