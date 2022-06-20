@@ -87,6 +87,20 @@ def check_database_connnexion (MARIADB_CNX):
     
 
 def push_data_stats(MARIADB_CNX,MARIADB_CURSOR, USER_ID,TELEGRAM_USER_NAME, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME, TYPE_MESSAGE, USER_LAST_MESSAGE_TIME) :
+    """
+    Il pousse les données vers la base de données.
+    
+    :param MARIADB_CNX: La connexion à la base de données
+    :param MARIADB_CURSOR: L'objet curseur
+    :param USER_ID: L'identifiant de l'utilisateur
+    :param TELEGRAM_USER_NAME: @Nom d'utilisateur
+    :param USER_FIRSTNAME: Le prénom de l'utilisateur
+    :param USER_LASTNAME: 'Aucun'
+    :param USER_FULLNAME: Le nom complet de l'utilisateur
+    :param TYPE_MESSAGE: est le type de message envoyé par l'utilisateur
+    :param USER_LAST_MESSAGE_TIME: datetime.datetime(2020, 3, 1, 15, 30, 59,
+    tzinfo=datetime.timezone.utc)
+    """
     if check_database_connnexion(MARIADB_CNX) == False:
        connexion_to_database()
     else:
