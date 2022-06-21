@@ -34,7 +34,7 @@ DICO_COPRO = {"COPRO_NOM":None, "COPRO_COURRIEL":None, "COPRO_APPT":None, "COPRO
 
 """
 # Enable logging
-if  path.exists("Logging.conf"):
+if path.exists("Logging.conf"):
     logging.config.fileConfig("Logging.conf",encoding="utf_8")
     botlog = logging.getLogger("BOTLOG")
     dbchecklog = logging.getLogger("DBCHECK")
@@ -48,7 +48,7 @@ else:
     LECTURE FICHIER DE CONFIGURATION DU BOT
 
 """
-if  path.exists("config.ini"):
+if path.exists("config.ini"):
     botlog.info("Lecture du fichier de configuration")
     config_bot = configparser.ConfigParser()
     config_bot.read("config.ini")
