@@ -40,8 +40,8 @@ if path.exists("Logging.conf"):
     dbchecklog = logging.getLogger("DBCHECK")
     dbdatalog = logging.getLogger("DBDATA")
     botlog.info("Lecture du fichier de configuration de la journalisation")
-else: 
-   exit("Le fichier Logging.conf n'existe pas")
+else:
+    exit("Le fichier Logging.conf n'existe pas")
 
 """
 
@@ -50,10 +50,9 @@ else:
 """
 if path.exists("config.ini"):
     botlog.info("Lecture du fichier de configuration")
-    config_bot = configparser.ConfigParser()
-    config_bot.read("config.ini")
+    config_bot = configparser.ConfigParser.read("config.ini")
 else: 
-   botlog.error("Le fichier config.ini n'existe pas")
+   botlog.critical("Le fichier config.ini n'existe pas")
    exit("Le fichier config.ini n'existe pas")
 
 """
@@ -79,10 +78,10 @@ def connexion_to_database() -> Mariadb:
 
 def check_database_connnexion (MARIADB_CNX):
     if (MARIADB_CNX.is_connected()) :
-        dbchecklog.info("Check database connexion : ONLINE")
+        dbchecklog.info("Check database : ONLINE")
         return True
     else:
-        dbchecklog.critical("Check database connexion : OFFLINE")
+        dbchecklog.critical("Check database : OFFLINE")
         return False
     
 
@@ -95,19 +94,22 @@ def push_data_stats(MARIADB_CNX,MARIADB_CURSOR, USER_ID,TELEGRAM_USER_NAME, USER
     :param USER_ID: L'identifiant de l'utilisateur
     :param TELEGRAM_USER_NAME: @Nom d'utilisateur
     :param USER_FIRSTNAME: Le prénom de l'utilisateur
-    :param USER_LASTNAME: 'Aucun'
+    :param USER_LASTNAME: Le nom de l'utilisateur
     :param USER_FULLNAME: Le nom complet de l'utilisateur
     :param TYPE_MESSAGE: est le type de message envoyé par l'utilisateur
-    :param USER_LAST_MESSAGE_TIME: datetime.datetime(2020, 3, 1, 15, 30, 59,
-    tzinfo=datetime.timezone.utc)
+    :param USER_LAST_MESSAGE_TIME: datetime.datetime(2020, 3, 1, 15, 30, 59,tzinfo=datetime.timezone.utc)
     """
     if check_database_connnexion(MARIADB_CNX) == False:
+       dbdatalog.info("Tentative de reconnection à la base de données")
        connexion_to_database()
     else:
         DATA_STATS = 'INSERT INTO STATS (USER_ID, TELEGRAM_USER_NAME, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME, TYPE_MESSAGE, USER_LAST_MESSAGE_TIME) VALUES (%s,%s,%s,%s,%s,%s,%s)'
         DATA_STATS_DATA = (USER_ID, TELEGRAM_USER_NAME, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME,TYPE_MESSAGE, USER_LAST_MESSAGE_TIME )
-        MARIADB_CURSOR.execute(DATA_STATS, DATA_STATS_DATA)
-    
+        try:
+            MARIADB_CURSOR.execute(DATA_STATS, DATA_STATS_DATA)
+            dbdatalog.info ("Insertion Statistics en BDD : OK")
+        except:
+            dbdatalog.critical("Impossible d'inserer les données en base, vérifier la connexion au serveur de base de données'")
 MARIADB_CNX = connexion_to_database()
 MARIADB_CURSOR = MARIADB_CNX.cursor()
 
@@ -206,35 +208,35 @@ def get_copro_etage(update, context) -> int :
 
 def get_copro_appt(update, context) -> int :
     DICO_COPRO["COPRO_APPT"] = update.message.text
-    botlog.info(f"le user : {update.effective_user.id} à saisit Appartement : {update.message.text}")
+    botlog.info(f"le user : {update.effective_user.id} a saisi Appartement : {update.message.text}")
     print(DICO_COPRO["COPRO_APPT"])
     update.message.reply_text("Quel est votre courriel ? :\n Pour passer, tapez /suivant")
     return COURRIEL
 
 def next_get_copro_appt(update, context) -> int :
     DICO_COPRO["COPRO_APPT"] = "NSP"
-    botlog.info(f"le user : {update.effective_user.id} à saisit Appartement : NSP")
+    botlog.info(f"le user : {update.effective_user.id} a saisi Appartement : NSP")
     print(DICO_COPRO["COPRO_APPT"])
     update.message.reply_text("Quel est votre courriel ? :\n Pour passer, tapez /suivant")
     return COURRIEL
 
 def get_copro_courriel(update, context) -> int :
     DICO_COPRO["COPRO_COURRIEL"] = update.message.text
-    botlog.info(f"le user : {update.effective_user.id} à saisit Courriel : {update.message.text}")
+    botlog.info(f"le user : {update.effective_user.id} a saisi Courriel : {update.message.text}")
     print(DICO_COPRO["COPRO_COURRIEL"])
     update.message.reply_text("Quel est votre nom ? :\n Pour passer, tapez /suivant")
     return NOM 
 
 def next_get_copro_courriel(update, context) -> int :
     DICO_COPRO["COPRO_COURRIEL"] = "NSP"
-    botlog.info(f"le user : {update.effective_user.id} à saisit Courriel : NSP")
+    botlog.info(f"le user : {update.effective_user.id} a saisi Courriel : NSP")
     print(DICO_COPRO["COPRO_COURRIEL"])
     update.message.reply_text("Quel est votre nom ? :\n Pour passer, tapez /suivant")
     return NOM 
 
 def get_copro_nom(update, context) -> int :
     DICO_COPRO["COPRO_NOM"] = update.message.text
-    botlog.info(f"le user : {update.effective_user.id} à saisit Nom : {update.message.text}")
+    botlog.info(f"le user : {update.effective_user.id} a saisi Nom : {update.message.text}")
     print(DICO_COPRO["COPRO_NOM"])
     update.message.reply_text("/creer  :)")
     print(DICO_COPRO)
@@ -242,7 +244,7 @@ def get_copro_nom(update, context) -> int :
 
 def next_get_copro_nom(update, context) -> int :
     DICO_COPRO["COPRO_NOM"] = "NSP"
-    botlog.info(f"le user : {update.effective_user.id} à saisit Nom : NSP")
+    botlog.info(f"le user : {update.effective_user.id} a saisi Nom : NSP")
     print(DICO_COPRO["COPRO_NOM"])
     update.message.reply_text("/creer  :)")
     print(DICO_COPRO)
@@ -258,7 +260,10 @@ def invitation_copro_to_chat(update, context):
     invit_link = ChatJoinRequest(chat=CHATID_COPRO, from_user=update.effective_message.chat.id, date=datetime.now(), bio=copro_bio, invite_link=config_bot["BOT_INFO"]["BOT_INVITATION_LINK"])
     #invit_link (chat=CHATID_COPRO, from_user=update.effective_message.chat.id, date=datetime, bio=copro_bio, invite_link=config_bot["BOT_INFO"]["BOT_INVITATION_LINK"])
     print(invit_link)
-    return invit_link, ConversationHandler.END 
+    return invit_link, ConversationHandler.END
+
+def accept_invitation_copro(update: ChatJoinRequest):
+    update.approve()
 
 
 def error_handler(update: Update, context) -> None:
@@ -321,7 +326,7 @@ disp.add_handler(CommandHandler("help",help))
 disp.add_handler(CommandHandler("contact",contact))
 disp.add_handler(CommandHandler("contenu",contenu))
 disp.add_handler(MessageHandler(Filters.text & ~Filters.command,recup_message_user))
-disp.add_handler(ChatJoinRequestHandler(invitation_copro_to_chat))
+disp.add_handler(ChatJoinRequestHandler(accept_invitation_copro))
 disp.add_error_handler(error_handler)
 
 updater.start_polling()
