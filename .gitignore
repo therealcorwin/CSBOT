@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 conv.py
 inlinekeyboard2.py
+.vscode/settings.json
