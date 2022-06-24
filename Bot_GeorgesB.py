@@ -50,7 +50,8 @@ else:
 """
 if path.exists("config.ini"):
     botlog.info("Lecture du fichier de configuration")
-    config_bot = configparser.ConfigParser.read("config.ini")
+    config_bot = configparser.ConfigParser()
+    config_bot.read_file(open("config.ini","r"))
 else: 
    botlog.critical("Le fichier config.ini n'existe pas")
    exit("Le fichier config.ini n'existe pas")
@@ -129,6 +130,7 @@ def contenu(update, context):
     update.message.reply_text("contenu ")
 
 def recup_message_user(update, context):
+    print(update)
     if update.effective_message.chat.type == "private":
         botlog.info("Creation d'un objet MUP")
         plop = MUP(  
@@ -243,10 +245,10 @@ def get_copro_end_conv (update, context):
 def invitation_copro_to_chat(update, context):
     print("plop")
     copro_bio = "bla bla bla"
-    invit_link = ChatJoinRequest(chat=CHATID_COPRO, from_user=update.effective_message.chat.id, date=datetime.now(), bio=copro_bio, invite_link=config_bot["BOT_INFO"]["BOT_INVITATION_LINK"])
+    ChatJoinRequest(chat=update.effective_chat.id, from_user=update.effective_user.id, date=datetime.now(), bio=copro_bio)
+    accept_invitation_copro(update.effective_message)
     #invit_link (chat=CHATID_COPRO, from_user=update.effective_message.chat.id, date=datetime, bio=copro_bio, invite_link=config_bot["BOT_INFO"]["BOT_INVITATION_LINK"])
-    print(invit_link)
-    return invit_link, ConversationHandler.END
+   
 
 def accept_invitation_copro(update: ChatJoinRequest):
     update.approve()
