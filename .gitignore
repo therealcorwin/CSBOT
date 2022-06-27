@@ -130,3 +130,6 @@ dmypy.json
 conv.py
 inlinekeyboard2.py
 .vscode/settings.json
+Scripts
+.project
+pyvenv.cfg
