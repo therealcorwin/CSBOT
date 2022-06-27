@@ -1,32 +1,21 @@
-from datetime import datetime
-from os import path
-import mysql.connector as Mariadb
-import logging
-from logging.config import fileConfig
 import configparser
-from Class_Bot import Message_Utilisateur_Private as MUP, Message_Utilisateur_Channel as MUC
-from telegram import ParseMode, Update, InlineKeyboardMarkup, InlineKeyboardButton, Bot, PhotoSize, ChatJoinRequest
-from telegram.ext import (
-    Updater,
-    CommandHandler,
-    MessageHandler,
-    Filters,
-    ConversationHandler,
-    CallbackQueryHandler,
-    ChatJoinRequestHandler
-)
-import traceback
 import html
 import json
+import logging
+import traceback
+from datetime import datetime
+from logging.config import fileConfig
+from os import path
 
+import mysql.connector as Mariadb
+from telegram import (Bot, ChatJoinRequest, InlineKeyboardButton,
+                      InlineKeyboardMarkup, ParseMode, PhotoSize, Update)
+from telegram.ext import (CallbackQueryHandler, ChatJoinRequestHandler,
+                          CommandHandler, ConversationHandler, Filters,
+                          MessageHandler, Updater)
 
-""" 
-
-    INITIALISATION VARIABLES
-
-"""
-ETAGE, APPT, COURRIEL, NOM, INVITATION, DATA_END, END_CONV = range(7)
-DICO_COPRO = {"COPRO_NOM":None, "COPRO_COURRIEL":None, "COPRO_APPT":None, "COPRO_ETAGE":None}
+from Class_Bot import Message_Utilisateur_Channel as MUC
+from Class_Bot import Message_Utilisateur_Private as MUP
 
 """ 
 
@@ -55,6 +44,18 @@ if path.exists("config.ini"):
 else: 
    botlog.critical("Le fichier config.ini n'existe pas")
    exit("Le fichier config.ini n'existe pas")
+
+""" 
+
+    INITIALISATION VARIABLES
+
+"""
+ETAGE, APPT, COURRIEL, NOM, INVITATION, DATA_END, END_CONV = range(7)
+DICO_COPRO = {"COPRO_NOM":None, "COPRO_COURRIEL":None, "COPRO_APPT":None, "COPRO_ETAGE":None}
+TOKEN_BOT_TELEGRAM = config_bot["TELEGRAM"]["TOKEN_BOT"]
+CHATID_COPRO = config_bot["CHAT_COPRO_INFO"]["CHAT_COPRO_ID"]
+updater = Updater(TOKEN_BOT_TELEGRAM)
+disp = updater.dispatcher
 
 """
     
@@ -106,9 +107,6 @@ MARIADB_CURSOR = MARIADB_CNX.cursor()
     CODE BOT
 
 """
-TOKEN_BOT_TELEGRAM = config_bot["TELEGRAM"]["TOKEN_BOT"]
-CHATID_COPRO = config_bot["CHAT_COPRO_INFO"]["CHAT_COPRO_ID"]
-
 botcopro = Bot(TOKEN_BOT_TELEGRAM)
 def start(update, context):
     update.message.reply_text("Plop Ici Georges ")
@@ -246,12 +244,12 @@ def invitation_copro_to_chat(update, context):
     print("plop")
     copro_bio = "bla bla bla"
     ChatJoinRequest(chat=update.effective_chat.id, from_user=update.effective_user.id, date=datetime.now(), bio=copro_bio)
-    accept_invitation_copro(update.effective_message)
     #invit_link (chat=CHATID_COPRO, from_user=update.effective_message.chat.id, date=datetime, bio=copro_bio, invite_link=config_bot["BOT_INFO"]["BOT_INVITATION_LINK"])
    
-
+@disp.chat_join_request_handler()
 def accept_invitation_copro(update: ChatJoinRequest):
     update.approve()
+    botcopro.create_chat_invite_link()
 
 
 def error_handler(update: Update, context) -> None:
@@ -279,9 +277,6 @@ def error_handler(update: Update, context) -> None:
     # Finally, send the message
     context.bot.send_message(chat_id="CHATID_COPRO", text=message, parse_mode=ParseMode.HTML)
 
-
-updater = Updater(TOKEN_BOT_TELEGRAM)
-disp = updater.dispatcher
 
 conv_inscription_handler = ConversationHandler(
         entry_points=[CommandHandler("copro", hello_copro)],
