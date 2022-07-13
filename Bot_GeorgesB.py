@@ -52,7 +52,7 @@ else:
 
 """
 ETAGE, APPT, COURRIEL, NOM, INVITATION, DATA_END, END_CONV = range(7)
-DICO_COPRO = {"COPRO_NOM":None, "COPRO_COURRIEL":None, "COPRO_APPT":None, "COPRO_ETAGE":None}
+DICO_COPRO = {"COPRO_NOM":"None", "COPRO_COURRIEL":"None", "COPRO_APPT":"None", "COPRO_ETAGE":"None"}
 TOKEN_BOT_TELEGRAM = config_bot["TELEGRAM"]["TOKEN_BOT"]
 CHATID_COPRO = config_bot["CHAT_COPRO_INFO"]["CHAT_COPRO_ID"]
 updater = Updater(TOKEN_BOT_TELEGRAM)
@@ -65,7 +65,7 @@ disp = updater.dispatcher
 """
 def connexion_to_database() -> Mariadb:
     try:
-        MARIADB_CNX = Mariadb.connect(
+        mariadb_cnx = Mariadb.connect(
             user=config_bot["DATABASE"]["USER"],
             password=config_bot["DATABASE"]["PASSWORD"],
             host=config_bot["DATABASE"]["HOST"],
@@ -74,14 +74,14 @@ def connexion_to_database() -> Mariadb:
             autocommit=True
             )
         dbdatalog.info("Connexion à la base de données réussie")
-        return MARIADB_CNX
+        return mariadb_cnx
     except Exception as e:
         dbdatalog.critical("Impossible de se connecter à la base de données")
         dbdatalog.critical(e)
         return False
 
-def check_database_connnexion (MARIADB_CNX):
-    if (MARIADB_CNX.is_connected()) :
+def check_database_connnexion (mariadb_cnx):
+    if (mariadb_cnx.is_connected()) :
         dbchecklog.info("Check database : ONLINE")
         return True
     else:
@@ -91,29 +91,29 @@ def check_database_connnexion (MARIADB_CNX):
 MARIADB_CNX = connexion_to_database()
 MARIADB_CURSOR = MARIADB_CNX.cursor()
 
-def push_data_stats(MARIADB_CNX,MARIADB_CURSOR, USER_ID,TELEGRAM_USER_NAME, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME, TYPE_MESSAGE, USER_LAST_MESSAGE_TIME) :
-    if check_database_connnexion(MARIADB_CNX) == False:
+def push_data_stats(mariadb_cnx,mariadb_cursor, user_id,telegram_user_name, user_firstname, user_lastname, user_fullname, type_message, user_last_message_time) :
+    if check_database_connnexion(mariadb_cnx) == False:
        dbdatalog.info("Tentative de reconnection à la base de données")
        connexion_to_database()
     else:
         DATA_STATS = 'INSERT INTO STATS (USER_ID, TELEGRAM_USER_NAME, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME, TYPE_MESSAGE, USER_LAST_MESSAGE_TIME) VALUES (%s,%s,%s,%s,%s,%s,%s)'
-        DATA_STATS_DATA = (USER_ID, TELEGRAM_USER_NAME, USER_FIRSTNAME, USER_LASTNAME, USER_FULLNAME,TYPE_MESSAGE, USER_LAST_MESSAGE_TIME )
+        DATA_STATS_DATA = (user_id, telegram_user_name, user_firstname, user_lastname, user_fullname,type_message, user_last_message_time )
         try:
-            MARIADB_CURSOR.execute(DATA_STATS, DATA_STATS_DATA)
+            mariadb_cursor.execute(DATA_STATS, DATA_STATS_DATA)
             dbdatalog.info ("Insertion Statistics en BDD : OK")
         except Exception as e:
             dbdatalog.critical("Impossible d'inserer les données en base, vérifier la connexion au serveur de base de données")
             dbdatalog.critical(e)
 
-def push_data_copro(MARIADB_CNX,MARIADB_CURSOR, USER_ID,TELEGRAM_USER_NAME, COPRO_NAME, COPRO_ETAGE, COPRO_APPT, COPRO_COURRIEL, COPRO_TELEPHONE) :
-    if check_database_connnexion(MARIADB_CNX) == False:
+def push_data_copro(mariadb_cnx, mariadb_cursor, user_id, telegram_user_name, copro_name, copro_etage, copro_appt, copro_courriel, copro_telephone) :
+    if check_database_connnexion(mariadb_cnx) == False:
        dbchecklog.info("Tentative de reconnection à la base de données")
        connexion_to_database()
     else:
         DATA_COPRO = 'INSERT IGNORE INTO COPRO (USER_ID, TELEGRAM_USER_NAME, NOM, ETAGE, APPT, COURRIEL, TELEPHONE) VALUES (%s,%s,%s,%s,%s,%s,%s)'
-        DATA_COPRO_DATA = (USER_ID,TELEGRAM_USER_NAME, COPRO_NAME, COPRO_ETAGE, COPRO_APPT, COPRO_COURRIEL, COPRO_TELEPHONE)
+        DATA_COPRO_DATA = (user_id,telegram_user_name, copro_name, copro_etage, copro_appt, copro_courriel, copro_telephone)
         try:
-            MARIADB_CURSOR.execute(DATA_COPRO, DATA_COPRO_DATA)
+            mariadb_cursor.execute(DATA_COPRO, DATA_COPRO_DATA)
             dbdatalog.info ("Insertion Copro en BDD : OK")
         except Exception as e:
             dbdatalog.critical("Impossible d'inserer les données en base, vérifier la connexion au serveur de base de données")
@@ -178,7 +178,7 @@ def recup_message_user(update, context):
 
 def hello_copro(update,context) -> int :
     botlog.info(f"Initialisation inscription chat copro pour le user : {update.effective_user.id}")
-    infobot = botcopro.get_user_profile_photos(config_bot["BOT_INFO"]["BOT_ID"])
+    botcopro.get_user_profile_photos(config_bot["BOT_INFO"]["BOT_ID"])
     taille= PhotoSize(config_bot["BOT_INFO"]["BOT_PHOTO_FILE_ID"], config_bot["BOT_INFO"]["BOT_PHOTO_FILE_ID_UNIQUE"], "50", "50")
     botcopro.send_photo(chat_id=update.effective_message.chat.id, photo=taille, caption="Bonjour, je suis Georges Bot, l'assitant virtuel de la copro.\n\nAfin de mieux répondre à vos demandes, je vais vous demander quelques informations.\n\nVous étes libre de ne pas répondre.\n\n")
     keyboard = [
@@ -264,25 +264,30 @@ def invitation_copro_to_chat(update, context):
     copro_bio = "bla bla bla"
     #ChatJoinRequest(chat=update.effective_chat.id, from_user=update.effective_user.id, date=datetime.now(), bio=copro_bio)
     try:
+        USER_ID=1
         print(botcopro.export_chat_invite_link())
-        invite = ChatInviteLink(botcopro.export_chat_invite_link(),5032410831,False,False, datetime.now()+timedelta(minutes=30),1,name="Invitation Chat Copro")     
+        invite = ChatInviteLink(botcopro.export_chat_invite_link(),5032410831,False,False, datetime.now()+timedelta(minutes=30),1,name="Invitation Chat Copro")
+        ChatJoinRequest(CHATID_COPRO, USER_ID, datetime.now(), bio=copro_bio, invite_link=invite, bot=botcopro)
+        botcopro.approve_chat_join_request(CHATID_COPRO, USER_ID)     
+        """
         #update.message.reply_text(invite.invite_link)
         #botcopro.create_chat_invite_link(CHATID_COPRO, name="Invitation copro", creates_join_request=True)
         #update.message.reply_text(botcopro.export_chat_invite_link(CHATID_COPRO))
         #print(botcopro.getChat(CHATID_COPRO))
-        ChatJoinRequest(CHATID_COPRO, 5543952483, datetime.now(), bio=copro_bio, invite_link=invite, bot=botcopro)
-        botcopro.approve_chat_join_request(CHATID_COPRO, 5543952483)  
+          
         #print(botcopro.get_chat(CHATID_COPRO))
-        #ChatJoinRequest(chat=CHATID_COPRO, from_user="1726678699", date=datetime.now(),invite_link=botcopro.export_chat_invite_link(CHATID_COPRO), bio=copro_bio)
-        #botcopro.approve_chat_join_request(CHATID_COPRO, user_id="1726678699")
+        #ChatJoinRequest(chat=CHATID_COPRO, from_user=USER_ID, date=datetime.now(),invite_link=botcopro.export_chat_invite_link(CHATID_COPRO), bio=copro_bio)
+        #botcopro.approve_chat_join_request(CHATID_COPRO, user_id=USER_ID)
+        """
     except Exception as e:
         print(e)
         
-def accept_invitation_copro(update, context):
+def accept_invitation_copro(update):
     print("accepte")
     update.approve()
     botcopro.approve_chat_join_request(-1001793343534)
     update.message.reply_text("Vous avez accepté l'invitation")
+    
     
 """def set_info_copro(update, context):
     botcopro.
