@@ -15,8 +15,8 @@ from telegram.ext import (CallbackQueryHandler, ChatJoinRequestHandler,
                           CommandHandler, ConversationHandler, Filters,
                           MessageHandler, Updater)
 
-from Class_Bot import Message_Utilisateur_Channel as MUC
-from Class_Bot import Message_Utilisateur_Private as MUP
+from Class_Bot import MessageUtilisateurChannel as MUC
+from Class_Bot import MessageUtilisateurPrivate as MUP
 
 """ 
 
