@@ -318,6 +318,39 @@ def error_handler(update: Update, context) -> None:
     context.bot.send_message(chat_id=CHATID_COPRO, text=message, parse_mode=ParseMode.HTML)
 
 
+def don_copro(update,context) -> int :
+    botlog.info(f"Initialisation du don pour la copro : {update.effective_user.id}")
+    botcopro.get_user_profile_photos(config_bot["BOT_INFO"]["BOT_ID"])
+    taille= PhotoSize(config_bot["BOT_INFO"]["BOT_PHOTO_FILE_ID"], config_bot["BOT_INFO"]["BOT_PHOTO_FILE_ID_UNIQUE"], "50", "50")
+    botcopro.send_photo(chat_id=update.effective_message.chat.id, photo=taille, caption="Bonjour, je suis Georges Bot, l'assitant virtuel de la copro.\n\nAfin de mieux répondre à vos demandes, je vais vous demander quelques informations.\n\nVous étes libre de ne pas répondre.\n\n")
+    keyboard = [
+            [
+                InlineKeyboardButton("Faire Don", callback_data='1'),
+                InlineKeyboardButton("Lister Don", callback_data='2'),
+                InlineKeyboardButton("Supprimer Don", callback_data='3'),
+                InlineKeyboardButton("Etage 4", callback_data='4')
+
+            ],
+            [   
+                InlineKeyboardButton("Annuler", callback_data='NSP'),
+            ],
+        ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text("Voullez vous faire un don à la copro ? :", reply_markup=reply_markup)
+    return ETAGE
+
+def faire_don_copro(update, context) -> int:
+    print("toto")
+
+def liste_don_copro(update, context) -> int:
+    print("toto")
+
+def suppr_don_copro(update, context) -> int:
+    print("toto")
+    
+
+
+
 conv_inscription_handler = ConversationHandler(
         entry_points=[CommandHandler("copro", hello_copro)],
         states={
