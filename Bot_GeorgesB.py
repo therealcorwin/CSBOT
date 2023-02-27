@@ -1,9 +1,9 @@
 import configparser
 import html
 import json
-import logging
 import traceback
 from datetime import datetime, timedelta
+from logging import getLogger
 from logging.config import fileConfig
 from os import path
 from turtle import up
@@ -25,10 +25,10 @@ from Class_Bot import MessageUtilisateurPrivate as MUP
 """
 # Enable logging
 if path.exists("Logging.conf"):
-    logging.config.fileConfig("Logging.conf",encoding="utf_8")
-    botlog = logging.getLogger("BOTLOG")
-    dbchecklog = logging.getLogger("DBCHECK")
-    dbdatalog = logging.getLogger("DBDATA")
+    fileConfig("Logging.conf",encoding="utf_8")
+    botlog = getLogger("BOTLOG")
+    dbchecklog = getLogger("DBCHECK")
+    dbdatalog = getLogger("DBDATA")
     botlog.info("Lecture du fichier de configuration de la journalisation")
 else:
     exit("Le fichier Logging.conf n'existe pas")
