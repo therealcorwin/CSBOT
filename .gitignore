@@ -139,3 +139,5 @@ Bot_DB.log.3
 Bot.log.1
 Bot.log.2
 Bot.log.3
+.sourcery.yaml
+pyproject.toml
