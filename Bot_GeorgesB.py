@@ -197,6 +197,11 @@ def hello_copro(update,context) -> int :
     update.message.reply_text('A quel étage habitez vous ? :', reply_markup=reply_markup)
     return ETAGE
 
+def creer_don_copro(update, context):
+    update.message.reply_text("Creer don copro ")
+
+def liste_don_copro(update, context):
+    update.message.reply_text("Liste don copro ")
 
 def get_copro_etage(update, context) -> int :
     # Get CallbackQuery from Update
@@ -265,10 +270,12 @@ def invitation_copro_to_chat(update, context):
     #ChatJoinRequest(chat=update.effective_chat.id, from_user=update.effective_user.id, date=datetime.now(), bio=copro_bio)
     try:
         USER_ID=1
-        print(botcopro.export_chat_invite_link())
-        invite = ChatInviteLink(botcopro.export_chat_invite_link(),5032410831,False,False, datetime.now()+timedelta(minutes=30),1,name="Invitation Chat Copro")
-        ChatJoinRequest(CHATID_COPRO, USER_ID, datetime.now(), bio=copro_bio, invite_link=invite, bot=botcopro)
-        botcopro.approve_chat_join_request(CHATID_COPRO, USER_ID)     
+        print(botcopro.export_chat_invite_link(CHATID_COPRO))
+        #invite = ChatInviteLink(botcopro.export_chat_invite_link(CHATID_COPRO),5032410831,False,False, datetime.now()+timedelta(minutes=30),1,name="Invitation Chat Copro")
+        #ChatJoinRequest(CHATID_COPRO, USER_ID, datetime.now(), bio=copro_bio, invite_link=invite, bot=botcopro)
+        #botcopro.approve_chat_join_request(CHATID_COPRO, USER_ID)
+        push_data_copro(MARIADB_CNX, MARIADB_CURSOR, update.effective_message.chat.id, update.effective_message.chat.first_name, DICO_COPRO["COPRO_NOM"], DICO_COPRO["COPRO_ETAGE"], DICO_COPRO["COPRO_APPT"], DICO_COPRO["COPRO_COURRIEL"], DICO_COPRO["COPRO_TEL"])
+
         """
         #update.message.reply_text(invite.invite_link)
         #botcopro.create_chat_invite_link(CHATID_COPRO, name="Invitation copro", creates_join_request=True)
@@ -347,13 +354,13 @@ def join(update: ChatJoinRequest):
     update.approve()
 
 disp.add_handler(conv_inscription_handler)
+disp.add_handler(MessageHandler(Filters.text & ~Filters.command,recup_message_user))
 disp.add_handler(ChatJoinRequestHandler(join))
 disp.add_handler(CommandHandler("start",start))
 disp.add_handler(CommandHandler("help",help))
 disp.add_handler(CommandHandler("contact",contact))
 disp.add_handler(CommandHandler("contenu",contenu))
 #disp.add_handler(MessageHandler(Filters.text & ~Filters.command,recup_message_user))
-disp.add_handler(MessageHandler(Filters.text,recup_message_user))
 disp.add_error_handler(error_handler)
 
 updater.start_polling()
