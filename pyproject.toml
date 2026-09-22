@@ -47,7 +47,7 @@ addopts = "--tb=short -q"
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-exclude = [".venv", "dist", "build", "__pycache__", "Bot_GeorgesB.py", "Class_Bot.py"]
+exclude = [".venv", "dist", "build", "__pycache__"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP"]
