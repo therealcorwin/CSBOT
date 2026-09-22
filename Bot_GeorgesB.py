@@ -1,18 +1,27 @@
 import configparser
-import html
-import json
-import traceback
-from datetime import datetime, timedelta
+from datetime import datetime
 from logging import getLogger
 from logging.config import fileConfig
 from os import path
 
 import mysql.connector as mariadb
-from telegram import (Bot, ChatJoinRequest, ChatInviteLink, InlineKeyboardButton,
-                      InlineKeyboardMarkup, ParseMode, PhotoSize, Update)
-from telegram.ext import (CallbackContext, CallbackQueryHandler, ChatJoinRequestHandler,
-                          CommandHandler, ConversationHandler, Filters,
-                          MessageHandler, Updater)
+from telegram import (
+    Bot,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    PhotoSize,
+    Update,
+)
+from telegram.ext import (
+    CallbackContext,
+    CallbackQueryHandler,
+    ChatJoinRequestHandler,
+    CommandHandler,
+    ConversationHandler,
+    Filters,
+    MessageHandler,
+    Updater,
+)
 
 from Class_Bot import MessageUtilisateurChannel as MUC
 from Class_Bot import MessageUtilisateurPrivate as MUP

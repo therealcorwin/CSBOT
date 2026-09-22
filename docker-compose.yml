@@ -1,0 +1,60 @@
+services:
+  csbot:
+    build: .
+    container_name: csbot_app
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./data/documents:/app/data/documents
+      - ./logs:/app/logs
+    networks:
+      - default
+      - Shared_Network
+    depends_on:
+      botcopro-mariadb:
+        condition: service_healthy
+
+  mariadb:
+    image: mariadb:latest
+    container_name: botcopro-mariadb
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    environment:
+      MARIADB_DATABASE: botcopro
+      MARIADB_USER: botcopro_app
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/mariadb_root_password
+      MARIADB_PASSWORD_FILE: /run/secrets/mariadb_app_password
+      MARIADB_AUTO_UPGRADE: "1"
+      TZ: Europe/Paris
+    secrets:
+      - mariadb_root_password
+      - mariadb_app_password
+    volumes:
+      - type: bind
+        source: D:\Dev\Docker\BOTCOPRO-DB\Data
+        target: /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - default
+      - Shared_Network
+
+secrets:
+  mariadb_root_password:
+    file: D:\Dev\Docker\BOTCOPRO-DB\secrets\mariadb_root_password
+  mariadb_app_password:
+    file: D:\Dev\Docker\BOTCOPRO-DB\secrets\mariadb_app_password
+
+networks:
+  default:
+  Shared_Network:
+    external: true
+

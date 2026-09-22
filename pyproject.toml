@@ -1,0 +1,55 @@
+[tool.poetry]
+package-mode = false
+
+[project]
+name = "csbot"
+version = "0.2.0"
+description = "Bot Telegram d'assistance pour copropriété et Conseil Syndical"
+authors = [
+    {name = "Therealcorwin"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<3.15"
+dependencies = [
+    "aiogram (>=3.15.0,<4.0.0)",
+    "pydantic (>=2.8.0,<3.0.0)",
+    "pydantic-settings (>=2.4.0,<3.0.0)",
+    "sqlalchemy (>=2.0.30,<3.0.0)",
+    "asyncmy (>=0.2.9,<0.3.0)",
+    "pymysql (>=1.1.0,<2.0.0)",
+    "google-genai (>=1.0.0,<2.0.0)",
+    "mistralai (>=1.0.0,<2.0.0)",
+    "httpx (>=0.27.0,<0.29.0)",
+    "aiohttp (>=3.9.0,<4.0.0)",
+    "python-dotenv (>=1.0.0,<2.0.0)",
+    "loguru (>=0.7.3,<0.8.0)",
+    "apscheduler (>=3.10.4,<4.0.0)",
+    "pypdf (>=4.0.0,<6.0.0)",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=8.0.0,<10.0.0)",
+    "pytest-asyncio (>=0.25.0)",
+    "ruff (>=0.8.0,<1.0.0)",
+    "aiosqlite (>=0.20.0,<1.0.0)",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "--tb=short -q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = [".venv", "dist", "build", "__pycache__", "Bot_GeorgesB.py", "Class_Bot.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = ["E501"]
+

@@ -1,0 +1,16 @@
+{
+    "python-envs.pythonProjects": [
+        {
+            "path": ".",
+            "envManager": "ms-python.python:poetry",
+            "packageManager": "ms-python.python:poetry"
+        }
+    ],
+    "python.defaultInterpreterPath": "C:\\Users\\fox_t\\AppData\\Local\\pypoetry\\Cache\\virtualenvs\\csbot-bk8RvGQt-py3.14\\Scripts\\python.exe",
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.useEnvironmentsExtension": true
+}
