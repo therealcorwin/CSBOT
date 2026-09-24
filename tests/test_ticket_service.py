@@ -1,8 +1,8 @@
 """Tests unitaires du service de tickets et signalements d'incidents."""
 
-from datetime import datetime, timedelta
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from database.models import Apartment, User
 from services.ticket_service import TicketService
 

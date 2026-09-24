@@ -2,6 +2,7 @@
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from database.models import Apartment, Occupant, User
 from services.poll_service import PollService
 

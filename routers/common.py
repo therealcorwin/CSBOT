@@ -14,6 +14,15 @@ common_router = Router(name="common_router")
 @common_router.message(CommandStart())
 async def cmd_start(message: Message, current_user: User | None, is_approved: bool, is_cs: bool):
     """Message d'accueil avec affichage du menu adapté au rôle."""
+    if message.chat.type != "private":
+        bot_info = await message.bot.get_me()
+        await message.reply(
+            f"👋 Bonjour ! Pour interagir avec Georges Bot et accéder à vos démarches de copropriété, "
+            f"veuillez m'écrire en message privé :\n👉 @{bot_info.username}",
+            parse_mode="HTML",
+        )
+        return
+
     if not is_approved and not is_cs:
         welcome_text = (
             "👋 <b>Bienvenue sur Georges Bot !</b>\n\n"

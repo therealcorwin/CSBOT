@@ -25,6 +25,25 @@ def get_status_kb() -> InlineKeyboardMarkup:
     )
 
 
+def get_floor_kb() -> InlineKeyboardMarkup:
+    """Choix de l'étage pour le résident (RDJ => 4ème)."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="🌿 Rez-de-jardin (RDJ)", callback_data="floor:0:Rez-de-jardin (RDJ)")
+            ],
+            [
+                InlineKeyboardButton(text="1️⃣ 1er étage", callback_data="floor:1:1er étage"),
+                InlineKeyboardButton(text="2️⃣ 2ème étage", callback_data="floor:2:2ème étage"),
+            ],
+            [
+                InlineKeyboardButton(text="3️⃣ 3ème étage", callback_data="floor:3:3ème étage"),
+                InlineKeyboardButton(text="4️⃣ 4ème étage", callback_data="floor:4:4ème étage"),
+            ],
+        ]
+    )
+
+
 def get_phone_kb() -> ReplyKeyboardMarkup:
     """Demande du numéro de téléphone avec bouton officiel Telegram."""
     return ReplyKeyboardMarkup(

@@ -1,8 +1,9 @@
 """Tests pour le serveur de webhooks entrants."""
 
-from aiohttp import web
 import pytest
-from api.webhook_server import handle_health, handle_n8n_alert
+from aiohttp import web
+
+from api.webhook_server import handle_health
 
 
 @pytest.mark.asyncio

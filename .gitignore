@@ -39,3 +39,13 @@ MANIFEST
 
 .env
 CSBOT.code-workspace
+AGENTS.md
+.gitignore
+Bot.ipynb
+CLAUDE.md
+GEMINI.md
+.claude/skills/graphify/SKILL.md
+.github/copilot-instructions.md
+logs/*
+logs/csbot_2026-09-22.log
+logs/csbot_2026-09-22.log

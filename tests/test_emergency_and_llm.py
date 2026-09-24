@@ -1,6 +1,5 @@
 """Tests unitaires pour EmergencyService et LLMManager."""
 
-import pytest
 from services.emergency_service import EmergencyService
 from services.llm.manager import LLMManager
 

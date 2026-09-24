@@ -1,7 +1,6 @@
 """Claviers pour les finances et la comptabilité CPTCOPRO."""
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from .solidarity_kb import get_solidarity_menu_kb  # Pour compatibilité descendante
 
 
 def get_finance_resident_kb() -> InlineKeyboardMarkup:
