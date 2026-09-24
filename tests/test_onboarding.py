@@ -1,7 +1,6 @@
 """Tests unitaires pour la logique et les validations du parcours d'onboarding."""
 
 import pytest
-
 from keyboards.onboarding_kb import get_floor_kb
 from routers.onboarding import EMAIL_REGEX
 
