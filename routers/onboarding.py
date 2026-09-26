@@ -10,7 +10,9 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.settings import settings
+from database.models import User
 from keyboards.cs_kb import get_registration_validation_kb
+from keyboards.menu_kb import get_main_menu, get_unregistered_menu
 from keyboards.onboarding_kb import (
     get_confirmation_kb,
     get_floor_kb,
@@ -35,7 +37,9 @@ class OnboardingFSM(StatesGroup):
 
 
 @onboarding_router.message(F.text == "📝 Demander l'accès à la copropriété")
-async def start_onboarding(message: Message, state: FSMContext, is_approved: bool):
+async def start_onboarding(
+    message: Message, state: FSMContext, is_approved: bool, is_cs: bool, current_user: User | None
+):
     """Démarre le parcours d'inscription pour un nouveau résident."""
     if message.chat.type != "private":
         bot_info = await message.bot.get_me()
@@ -43,12 +47,25 @@ async def start_onboarding(message: Message, state: FSMContext, is_approved: boo
             "🔒 <b>Inscription sécurisée</b>\n\n"
             "Pour préserver la confidentialité de vos données personnelles (appartement, téléphone, email), "
             f"l'inscription se déroule exclusivement en message privé avec le bot :\n👉 @{bot_info.username}",
+            reply_markup=ReplyKeyboardRemove(),
             parse_mode="HTML",
         )
         return
 
     if is_approved:
-        await message.answer("✅ Votre profil est déjà validé. Vous avez un accès complet au bot !")
+        await message.answer(
+            "✅ Votre profil est déjà validé. Vous avez un accès complet au bot !",
+            reply_markup=get_main_menu(is_cs=is_cs),
+        )
+        return
+
+    if current_user and current_user.phone and not is_approved:
+        await message.answer(
+            "⏳ <b>Votre inscription a déjà été transmise et est en cours de validation par le Conseil Syndical.</b>\n\n"
+            "Dès validation de votre fiche par le CS, vous recevrez une notification avec votre lien d'accès au chat.",
+            reply_markup=ReplyKeyboardRemove(),
+            parse_mode="HTML",
+        )
         return
 
     await state.clear()
@@ -56,7 +73,7 @@ async def start_onboarding(message: Message, state: FSMContext, is_approved: boo
         "👋 <b>Bienvenue dans le processus d'adhésion à la copropriété.</b>\n\n"
         "Pour valider votre entrée et maintenir un annuaire à jour, merci de renseigner ces quelques informations.\n\n"
         "1️⃣ <b>Quel est votre numéro d'appartement ?</b>\n"
-        "<i>(Veuillez entrer un numéro entre 1 et 64)</i>",
+        "<i>(Veuillez entrer un numéro entre 3 et 64)</i>",
         parse_mode="HTML",
     )
     await state.set_state(OnboardingFSM.waiting_apt_number)
@@ -65,10 +82,10 @@ async def start_onboarding(message: Message, state: FSMContext, is_approved: boo
 @onboarding_router.message(OnboardingFSM.waiting_apt_number, F.text)
 async def process_apt_number(message: Message, state: FSMContext):
     raw_text = message.text.strip()
-    if not raw_text.isdigit() or not (1 <= int(raw_text) <= 64):
+    if not raw_text.isdigit() or not (3 <= int(raw_text) <= 64):
         await message.answer(
             "⚠️ <b>Numéro d'appartement invalide.</b>\n"
-            "La résidence compte 64 appartements. Veuillez saisir un numéro entre <b>1 et 64</b> (ex: 12, 45) :",
+            "Veuillez saisir un numéro d'appartement entre <b>3 et 64</b> (ex: 12, 45) :",
             parse_mode="HTML",
         )
         return
@@ -235,6 +252,13 @@ async def confirm_onboarding(callback: CallbackQuery, state: FSMContext, db: Asy
         "avec votre lien d'accès au chat de la copropriété.",
         parse_mode="HTML",
     )
+    # Supprime complètement le clavier persistant de l'écran du résident
+    await callback.message.answer(
+        "⏳ <b>Votre inscription est en attente de validation.</b>\n"
+        "Vous serez notifié dès qu'un membre du Conseil Syndical aura validé votre accès.",
+        reply_markup=ReplyKeyboardRemove(),
+        parse_mode="HTML",
+    )
     await callback.answer()
 
 
@@ -242,8 +266,12 @@ async def confirm_onboarding(callback: CallbackQuery, state: FSMContext, db: Asy
 async def restart_onboarding(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(
-        "🔄 <b>Saisie réinitialisée.</b> Cliquez à nouveau sur le bouton ci-dessous pour recommencer.",
+        "🔄 <b>Saisie réinitialisée.</b> Cliquez sur le bouton ci-dessous pour recommencer.",
         parse_mode="HTML",
+    )
+    await callback.message.answer(
+        "Pour recommencer votre inscription :",
+        reply_markup=get_unregistered_menu(),
     )
     await callback.answer()
 

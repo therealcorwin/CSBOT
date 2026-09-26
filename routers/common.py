@@ -2,7 +2,7 @@
 
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardRemove
 
 from config.settings import settings
 from database.models import User
@@ -19,11 +19,23 @@ async def cmd_start(message: Message, current_user: User | None, is_approved: bo
         await message.reply(
             f"👋 Bonjour ! Pour interagir avec Georges Bot et accéder à vos démarches de copropriété, "
             f"veuillez m'écrire en message privé :\n👉 @{bot_info.username}",
+            reply_markup=ReplyKeyboardRemove(),
             parse_mode="HTML",
         )
         return
 
     if not is_approved and not is_cs:
+        # Résident ayant déjà soumis son formulaire, en attente d'approbation CS
+        if current_user and current_user.phone:
+            welcome_text = (
+                f"👋 Bonjour <b>{current_user.first_name}</b> !\n\n"
+                "⏳ <b>Votre demande d'inscription est en cours de validation par le Conseil Syndical.</b>\n\n"
+                "Dès qu'un membre du CS aura validé votre fiche, vous recevrez une notification "
+                "avec votre lien personnel d'accès au chat de la copropriété."
+            )
+            await message.answer(welcome_text, reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
+            return
+
         welcome_text = (
             "👋 <b>Bienvenue sur Georges Bot !</b>\n\n"
             "Je suis l'assistant virtuel de votre résidence.\n\n"
@@ -88,7 +100,7 @@ async def show_about(message: Message):
 
 
 @common_router.message(Command("help"))
-async def cmd_help(message: Message, is_cs: bool):
+async def cmd_help(message: Message, is_cs: bool, is_admin: bool):
     help_text = (
         "📖 <b>AIDE & GUIDE DES FONCTIONNALITÉS</b>\n\n"
         "• <b>🚨 Urgences 24/7 :</b> Contacts d'astreinte immédiats (ascenseur, plomberie, coupures).\n"
@@ -107,6 +119,13 @@ async def cmd_help(message: Message, is_cs: bool):
             "• <b>🔍 Rechercher un lot :</b> /lot &lt;numéro&gt; pour voir les occupants.\n"
             "• <b>📊 Finances Copro :</b> Balance des impayés et trésorerie CPTCOPRO.\n"
             "• <b>🗳️ Créer un sondage :</b> Sondage officiel avec contrôle 1 vote par lot.\n"
+        )
+    if is_admin:
+        help_text += (
+            "\n🛠️ <b>COMMANDES ADMINISTRATEUR :</b>\n"
+            "• <b>/promouvoir &lt;ID/@pseudo&gt; :</b> Nommer un membre au Conseil Syndical.\n"
+            "• <b>/retrograder &lt;ID/@pseudo&gt; :</b> Rétablir un membre CS en simple copropriétaire.\n"
+            "• <b>/membres_cs :</b> Afficher la liste de tous les membres du CS.\n"
         )
     await message.answer(help_text, parse_mode="HTML")
 

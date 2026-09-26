@@ -1,6 +1,7 @@
 """Package des routeurs aiogram pour CSBOT."""
 from aiogram import Router
 
+from .admin import admin_router
 from .ag_router import ag_router
 from .assistant import assistant_router
 from .common import common_router
@@ -18,6 +19,7 @@ from .solidarity import solidarity_router
 def setup_routers() -> Router:
     """Enregistre tous les routeurs de l'application dans un routeur racine."""
     root_router = Router()
+    root_router.include_router(admin_router)
     root_router.include_router(common_router)
     root_router.include_router(onboarding_router)
     root_router.include_router(incidents_router)

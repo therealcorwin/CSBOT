@@ -8,10 +8,21 @@ def get_unregistered_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="📝 Demander l'accès à la copropriété")],
-            [KeyboardButton(text="ℹ️ À propos du bot"), KeyboardButton(text="🚨 Urgences Résidence")]
+            [KeyboardButton(text="ℹ️ À propos du bot"), KeyboardButton(text="🚨 Urgence Résidence 24/7")],
         ],
         resize_keyboard=True,
-        is_persistent=True
+        is_persistent=True,
+    )
+
+
+def get_pending_menu() -> ReplyKeyboardMarkup:
+    """Menu affiché pour un résident ayant soumis son inscription, en attente de validation CS."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="🚨 Urgence Résidence 24/7"), KeyboardButton(text="ℹ️ À propos du bot")],
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
     )
 
 

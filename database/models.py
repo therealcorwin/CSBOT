@@ -1,15 +1,16 @@
 """Modèles de base de données relationnelle pour CSBOT (SQLAlchemy 2.0)."""
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
+
 from sqlalchemy import (
+    JSON,
     BigInteger,
     Boolean,
     DateTime,
     Enum,
     ForeignKey,
     Integer,
-    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -27,11 +28,11 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, comment="Telegram User ID")
-    username: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    username: Mapped[str | None] = mapped_column(String(64), nullable=True)
     first_name: Mapped[str] = mapped_column(String(64), default="")
     last_name: Mapped[str] = mapped_column(String(64), default="")
-    phone: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
-    email: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     # Statut du résident
     status: Mapped[str] = mapped_column(
@@ -43,15 +44,18 @@ class User(Base):
     is_cs_member: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     is_approved: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    approved_by: Mapped[str | None] = mapped_column(String(128), nullable=True, comment="Nom / pseudo du validateur")
+    approved_by_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, comment="ID Telegram du validateur")
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="Date et heure de validation")
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
 
     # Relations
-    occupancies: Mapped[List["Occupant"]] = relationship("Occupant", back_populates="user", cascade="all, delete-orphan")
-    tickets: Mapped[List["Ticket"]] = relationship("Ticket", back_populates="user")
-    ag_ideas: Mapped[List["AGIdea"]] = relationship("AGIdea", back_populates="user")
-    solidarity_items: Mapped[List["SolidarityItem"]] = relationship("SolidarityItem", back_populates="user")
+    occupancies: Mapped[list["Occupant"]] = relationship("Occupant", back_populates="user", cascade="all, delete-orphan")
+    tickets: Mapped[list["Ticket"]] = relationship("Ticket", back_populates="user")
+    ag_ideas: Mapped[list["AGIdea"]] = relationship("AGIdea", back_populates="user")
+    solidarity_items: Mapped[list["SolidarityItem"]] = relationship("SolidarityItem", back_populates="user")
 
     @property
     def full_name(self) -> str:
@@ -66,11 +70,11 @@ class Apartment(Base):
     number: Mapped[str] = mapped_column(String(32), unique=True, index=True, comment="Numéro de porte / lot")
     floor: Mapped[int] = mapped_column(Integer, default=0)
     building: Mapped[str] = mapped_column(String(32), default="A")
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    occupants: Mapped[List["Occupant"]] = relationship("Occupant", back_populates="apartment")
-    tickets: Mapped[List["Ticket"]] = relationship("Ticket", back_populates="apartment")
-    poll_votes: Mapped[List["PollVote"]] = relationship("PollVote", back_populates="apartment")
+    occupants: Mapped[list["Occupant"]] = relationship("Occupant", back_populates="apartment")
+    tickets: Mapped[list["Ticket"]] = relationship("Ticket", back_populates="apartment")
+    poll_votes: Mapped[list["PollVote"]] = relationship("PollVote", back_populates="apartment")
 
 
 class Occupant(Base):
@@ -82,7 +86,7 @@ class Occupant(Base):
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     moved_in_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
-    moved_out_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    moved_out_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     apartment: Mapped["Apartment"] = relationship("Apartment", back_populates="occupants")
     user: Mapped["User"] = relationship("User", back_populates="occupancies")
@@ -94,11 +98,11 @@ class Ticket(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     ticket_code: Mapped[str] = mapped_column(String(32), unique=True, index=True)
-    user_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    apartment_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("apartments.id", ondelete="SET NULL"), nullable=True)
+    user_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    apartment_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("apartments.id", ondelete="SET NULL"), nullable=True)
     category: Mapped[str] = mapped_column(String(64), comment="Ascenseur, Plomberie, Electricite, etc.")
     description: Mapped[str] = mapped_column(Text)
-    photo_file_id: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    photo_file_id: Mapped[str | None] = mapped_column(String(256), nullable=True)
 
     status: Mapped[str] = mapped_column(
         Enum("OPEN", "SENT_TO_SYNDIC", "IN_PROGRESS", "RESOLVED", "CANCELLED", name="ticket_status_enum"),
@@ -106,10 +110,10 @@ class Ticket(Base):
         index=True
     )
 
-    handled_by_cs_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
-    sent_to_syndic_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    last_reminder_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    external_ticket_url: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    handled_by_cs_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    sent_to_syndic_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_reminder_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    external_ticket_url: Mapped[str | None] = mapped_column(String(256), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
@@ -126,7 +130,7 @@ class VendorVisit(Base):
     vendor_name: Mapped[str] = mapped_column(String(128))
     service_type: Mapped[str] = mapped_column(String(64))
     intervention_summary: Mapped[str] = mapped_column(Text)
-    reported_by_user_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    reported_by_user_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     visit_date: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
 
@@ -136,15 +140,15 @@ class Poll(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(256))
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     options: Mapped[dict] = mapped_column(JSON, comment="Liste des choix possibles")
     poll_type: Mapped[str] = mapped_column(String(32), default="FORMAL_APARTMENT")  # FORMAL_APARTMENT ou QUICK
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_by_user_id: Mapped[int] = mapped_column(BigInteger)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
-    closes_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    closes_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    votes: Mapped[List["PollVote"]] = relationship("PollVote", back_populates="poll", cascade="all, delete-orphan")
+    votes: Mapped[list["PollVote"]] = relationship("PollVote", back_populates="poll", cascade="all, delete-orphan")
 
 
 class PollVote(Base):
@@ -188,7 +192,7 @@ class SolidarityItem(Base):
     item_type: Mapped[str] = mapped_column(String(32), default="LOAN")  # LOAN ou DONATION
     title: Mapped[str] = mapped_column(String(256))
     description: Mapped[str] = mapped_column(Text)
-    photo_file_id: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    photo_file_id: Mapped[str | None] = mapped_column(String(256), nullable=True)
     is_available: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 

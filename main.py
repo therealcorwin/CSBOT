@@ -40,6 +40,9 @@ async def set_default_commands(bot: Bot):
         BotCommand(command="help", description="Guide d'utilisation et aide"),
         BotCommand(command="prestataire", description="Enregistrer une visite de prestataire (CS)"),
         BotCommand(command="resultats_sondage", description="Résultats du sondage en cours (CS)"),
+        BotCommand(command="promouvoir", description="Nommer un membre au Conseil Syndical (Admin)"),
+        BotCommand(command="retrograder", description="Rétrograder un membre CS en simple copro (Admin)"),
+        BotCommand(command="membres_cs", description="Liste des membres du Conseil Syndical (Admin)"),
     ]
     try:
         await bot.set_my_commands(commands)

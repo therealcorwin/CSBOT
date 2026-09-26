@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.settings import settings
 from database.models import User, VendorVisit
+from keyboards.menu_kb import get_main_menu
 from services.ticket_service import TicketService
 from services.user_service import UserService
 
@@ -40,17 +41,45 @@ async def handle_user_validation(callback: CallbackQuery, db: AsyncSession, is_c
     target_user_id = int(parts[1])
     action = parts[2]
 
-    approver_name = callback.from_user.first_name
+    approver = callback.from_user
+    approver_name = approver.full_name or approver.first_name
+    approver_username = f"@{approver.username}" if approver.username else None
+
+    # Format pour la base de données : Nom (@pseudo)
+    if approver_username:
+        approved_by_str = f"{approver_name} ({approver_username})"
+    else:
+        approved_by_str = approver_name or f"ID {approver.id}"
+
+    # Format complet pour les logs console/fichier
+    approver_log = f"{approver_name}"
+    if approver_username:
+        approver_log += f" ({approver_username})"
+    approver_log += f" [ID: {approver.id}]"
+
     now_str = datetime.now().strftime("%d/%m à %H:%M")
 
     if action == "approve":
-        user = await UserService.approve_user(db, target_user_id)
+        user = await UserService.approve_user(
+            db,
+            user_id=target_user_id,
+            approved_by=approved_by_str,
+            approved_by_id=approver.id,
+        )
         if not user:
             await callback.answer("Utilisateur introuvable.", show_alert=True)
             return
 
+        logger.info(
+            f"✅ Inscription validée : résident {user.id} ({user.full_name}) "
+            f"validé par {approver_log}."
+        )
+
         # Mise à jour de la fiche dans le groupe CS
-        new_text = callback.message.text + f"\n\n✅ <b>VALIDÉ par {approver_name}</b> le {now_str}."
+        new_text = callback.message.text + f"\n\n✅ <b>VALIDÉ par {approver_name}"
+        if approver.username:
+            new_text += f" (@{approver.username})"
+        new_text += f"</b> (ID: <code>{approver.id}</code>) le {now_str}."
         try:
             await callback.message.edit_text(new_text, reply_markup=None, parse_mode="HTML")
         except Exception:
@@ -79,7 +108,12 @@ async def handle_user_validation(callback: CallbackQuery, db: AsyncSession, is_c
             welcome_dm += f"\n\n👉 <b>Rejoindre le chat de la copropriété :</b>\n{invite_link}\n\n<i>(Ce lien est strictement personnel et à usage unique).</i>"
 
         try:
-            await callback.bot.send_message(chat_id=user.id, text=welcome_dm, parse_mode="HTML")
+            await callback.bot.send_message(
+                chat_id=user.id,
+                text=welcome_dm,
+                reply_markup=get_main_menu(is_cs=user.is_cs_member),
+                parse_mode="HTML",
+            )
         except Exception as e:
             logger.warning(f"Impossible d'envoyer le message de bienvenue à {user.id} : {e}")
 
@@ -87,7 +121,13 @@ async def handle_user_validation(callback: CallbackQuery, db: AsyncSession, is_c
 
     elif action == "reject":
         await UserService.reject_user(db, target_user_id)
-        new_text = callback.message.text + f"\n\n❌ <b>REFUSÉ par {approver_name}</b> le {now_str}."
+        logger.info(
+            f"❌ Inscription refusée : utilisateur {target_user_id} refusé par {approver_log}."
+        )
+        new_text = callback.message.text + f"\n\n❌ <b>REFUSÉ par {approver_name}"
+        if approver.username:
+            new_text += f" (@{approver.username})"
+        new_text += f"</b> (ID: <code>{approver.id}</code>) le {now_str}."
         try:
             await callback.message.edit_text(new_text, reply_markup=None, parse_mode="HTML")
         except Exception:

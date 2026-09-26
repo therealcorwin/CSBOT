@@ -1,6 +1,7 @@
 """Tests unitaires pour la logique et les validations du parcours d'onboarding."""
 
 import pytest
+
 from keyboards.onboarding_kb import get_floor_kb
 from routers.onboarding import EMAIL_REGEX
 
@@ -25,10 +26,12 @@ def test_floor_kb_options():
 @pytest.mark.parametrize(
     "raw_input,is_valid,expected_val",
     [
-        ("1", True, 1),
+        ("3", True, 3),
         ("64", True, 64),
         ("32", True, 32),
         ("  45  ", True, 45),
+        ("1", False, None),
+        ("2", False, None),
         ("0", False, None),
         ("65", False, None),
         ("-5", False, None),
@@ -39,9 +42,9 @@ def test_floor_kb_options():
     ],
 )
 def test_apartment_number_validation(raw_input, is_valid, expected_val):
-    """Vérifie la validation du numéro d'appartement (1 à 64)."""
+    """Vérifie la validation du numéro d'appartement (3 à 64)."""
     text = raw_input.strip()
-    valid = text.isdigit() and (1 <= int(text) <= 64)
+    valid = text.isdigit() and (3 <= int(text) <= 64)
     assert valid == is_valid
     if is_valid:
         assert int(text) == expected_val

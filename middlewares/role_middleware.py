@@ -40,8 +40,12 @@ class RoleMiddleware(BaseMiddleware):
                     is_cs = is_cs or current_user.is_cs_member
                     is_admin = is_admin or current_user.is_admin
 
+            if is_cs or is_admin:
+                is_approved = True
+
         data["current_user"] = current_user
         data["is_approved"] = is_approved
+        data["is_registered"] = bool(current_user and current_user.phone)
         data["is_cs"] = is_cs
         data["is_admin"] = is_admin
 

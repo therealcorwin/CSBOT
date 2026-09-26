@@ -1,17 +1,18 @@
 """Service de gestion des utilisateurs, des appartements et des déménagements."""
 
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+
 from loguru import logger
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
 from database.models import Apartment, Occupant, User
 
 
 class UserService:
     @staticmethod
-    async def get_user_by_id(session: AsyncSession, user_id: int) -> Optional[User]:
+    async def get_user_by_id(session: AsyncSession, user_id: int) -> User | None:
         stmt = (
             select(User)
             .where(User.id == user_id)
@@ -26,7 +27,7 @@ class UserService:
     async def get_or_create_user(
         session: AsyncSession,
         user_id: int,
-        username: Optional[str] = None,
+        username: str | None = None,
         first_name: str = "",
         last_name: str = "",
     ) -> User:
@@ -53,8 +54,8 @@ class UserService:
     async def submit_onboarding(
         session: AsyncSession,
         user_id: int,
-        data: Dict,
-    ) -> Tuple[User, Apartment]:
+        data: dict,
+    ) -> tuple[User, Apartment]:
         """Enregistre les données d'onboarding soumises par un résident."""
         user = await UserService.get_or_create_user(
             session=session,
@@ -107,17 +108,31 @@ class UserService:
         return user, apartment
 
     @staticmethod
-    async def approve_user(session: AsyncSession, user_id: int) -> Optional[User]:
+    async def approve_user(
+        session: AsyncSession,
+        user_id: int,
+        approved_by: str | None = None,
+        approved_by_id: int | None = None,
+    ) -> User | None:
         """Valide l'inscription d'un résident par le Conseil Syndical."""
         user = await UserService.get_user_by_id(session, user_id)
         if user:
             user.is_approved = True
+            user.approved_by = approved_by
+            user.approved_by_id = approved_by_id
+            user.approved_at = datetime.now()
             await session.flush()
-            logger.info(f"Résident {user.id} ({user.full_name}) validé avec succès.")
+            val_info = []
+            if approved_by:
+                val_info.append(approved_by)
+            if approved_by_id:
+                val_info.append(f"ID Telegram: {approved_by_id}")
+            val_text = f" par {', '.join(val_info)}" if val_info else ""
+            logger.info(f"Résident {user.id} ({user.full_name}) validé avec succès{val_text}.")
         return user
 
     @staticmethod
-    async def reject_user(session: AsyncSession, user_id: int) -> Optional[User]:
+    async def reject_user(session: AsyncSession, user_id: int) -> User | None:
         """Refuse l'inscription d'un utilisateur."""
         user = await UserService.get_user_by_id(session, user_id)
         if user:
@@ -146,7 +161,7 @@ class UserService:
         return True
 
     @staticmethod
-    async def get_active_apartment_for_user(session: AsyncSession, user_id: int) -> Optional[Apartment]:
+    async def get_active_apartment_for_user(session: AsyncSession, user_id: int) -> Apartment | None:
         """Récupère l'appartement actif d'un utilisateur."""
         stmt = (
             select(Apartment)
@@ -157,7 +172,7 @@ class UserService:
         return res.scalar_one_or_none()
 
     @staticmethod
-    async def get_pending_users(session: AsyncSession) -> List[User]:
+    async def get_pending_users(session: AsyncSession) -> list[User]:
         """Récupère tous les utilisateurs ayant soumis leur fiche et en attente de validation."""
         stmt = (
             select(User)
@@ -169,7 +184,7 @@ class UserService:
         return list(res.scalars().all())
 
     @staticmethod
-    async def get_occupants_by_apartment(session: AsyncSession, apt_number: str) -> List[Tuple[User, Apartment]]:
+    async def get_occupants_by_apartment(session: AsyncSession, apt_number: str) -> list[tuple[User, Apartment]]:
         """Recherche tous les occupants actuels d'un numéro d'appartement."""
         stmt = (
             select(User, Apartment)
@@ -184,7 +199,7 @@ class UserService:
         return list(res.all())
 
     @staticmethod
-    async def search_residents_by_query(session: AsyncSession, query: str) -> List[Tuple[User, Optional[Apartment]]]:
+    async def search_residents_by_query(session: AsyncSession, query: str) -> list[tuple[User, Apartment | None]]:
         """Recherche un résident par son nom, prénom ou pseudo."""
         clean_q = f"%{query.strip()}%"
         stmt = (
@@ -201,4 +216,50 @@ class UserService:
         )
         res = await session.execute(stmt)
         return list(res.all())
+
+    @staticmethod
+    async def get_user_by_username(session: AsyncSession, username: str) -> User | None:
+        """Recherche un utilisateur par son @username exact (insensible à la casse)."""
+        clean_username = username.lstrip("@").strip()
+        stmt = (
+            select(User)
+            .where(func.lower(User.username) == clean_username.lower())
+            .options(selectinload(User.occupancies).selectinload(Occupant.apartment))
+        )
+        res = await session.execute(stmt)
+        return res.scalar_one_or_none()
+
+    @staticmethod
+    async def promote_to_cs(session: AsyncSession, user_id: int) -> User | None:
+        """Promeut un utilisateur au rôle de membre du Conseil Syndical."""
+        user = await UserService.get_user_by_id(session, user_id)
+        if user:
+            user.is_cs_member = True
+            user.is_approved = True
+            await session.flush()
+            logger.info(f"Utilisateur {user.id} ({user.full_name}) promu membre du Conseil Syndical.")
+        return user
+
+    @staticmethod
+    async def demote_from_cs(session: AsyncSession, user_id: int) -> User | None:
+        """Rétrograde un membre du Conseil Syndical en simple copropriétaire."""
+        user = await UserService.get_user_by_id(session, user_id)
+        if user:
+            user.is_cs_member = False
+            await session.flush()
+            logger.info(f"Utilisateur {user.id} ({user.full_name}) rétrogradé en simple copropriétaire.")
+        return user
+
+    @staticmethod
+    async def get_cs_members(session: AsyncSession) -> list[User]:
+        """Récupère la liste de tous les membres du Conseil Syndical."""
+        stmt = (
+            select(User)
+            .where(User.is_cs_member.is_(True))
+            .options(selectinload(User.occupancies).selectinload(Occupant.apartment))
+            .order_by(User.first_name, User.last_name)
+        )
+        res = await session.execute(stmt)
+        return list(res.scalars().all())
+
 
