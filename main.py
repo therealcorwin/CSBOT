@@ -20,6 +20,7 @@ from middlewares.db_middleware import DbSessionMiddleware
 from middlewares.role_middleware import RoleMiddleware
 from routers import setup_routers
 from scheduler.tasks import setup_scheduler
+from services.llm.manager import llm_manager
 
 # Configuration des logs
 logger.remove()
@@ -58,8 +59,11 @@ async def main():
     if not settings.BOT_TOKEN or settings.BOT_TOKEN == "votre_token_telegram_bot_ici":
         logger.warning("ATTENTION : Le token Telegram n'est pas encore renseigné dans le fichier .env.")
 
-    # 1. Initialisation de la base de données
-    await init_db()
+    # 1. Initialisation de la base de données (Fail-Fast)
+    db_ok = await init_db()
+    if not db_ok:
+        logger.critical("🛑 Arrêt critique : CSBOT ne peut pas fonctionner sans base de données. Démarrage annulé.")
+        return
 
     # 2. Initialisation du Bot et du Dispatcher
     bot = Bot(
@@ -100,6 +104,7 @@ async def main():
         if webhook_runner:
             await webhook_runner.cleanup()
         await close_db()
+        await llm_manager.close()
         await bot.session.close()
         logger.info("CSBOT arrêté proprement.")
 

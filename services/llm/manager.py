@@ -2,9 +2,10 @@
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
+
 from loguru import logger
 from pypdf import PdfReader
+
 from config.settings import settings
 from services.llm.base import BaseLLMService
 from services.llm.gemini_provider import GeminiProvider
@@ -12,13 +13,20 @@ from services.llm.mistral_provider import MistralProvider
 
 
 class LLMManager:
-    def __init__(self, docs_dir: Optional[Path] = None):
+    def __init__(self, docs_dir: Path | None = None):
         self.docs_dir = docs_dir or Path(__file__).resolve().parent.parent.parent / "data" / "documents"
         self.docs_dir.mkdir(parents=True, exist_ok=True)
 
         self.gemini = GeminiProvider()
         self.mistral = MistralProvider()
-        self._cached_docs_text: Optional[str] = None
+        self._cached_docs_text: str | None = None
+
+    async def close(self) -> None:
+        """Ferme proprement l'ensemble des clients LLM."""
+        if hasattr(self.gemini, "aclose"):
+            await self.gemini.aclose()
+        if hasattr(self.mistral, "aclose"):
+            await self.mistral.aclose()
 
     def get_provider(self, task_type: str = "general") -> BaseLLMService:
         """Sélectionne le fournisseur le plus adapté selon la tâche et la configuration."""
@@ -37,7 +45,7 @@ class LLMManager:
         if self._cached_docs_text and not force_reload:
             return self._cached_docs_text
 
-        text_parts: List[str] = []
+        text_parts: list[str] = []
         if not self.docs_dir.exists():
             return ""
 
@@ -78,7 +86,7 @@ class LLMManager:
 
         return await provider.generate_response(prompt=question, system_prompt=system_prompt)
 
-    async def prefilter_resident_request(self, message: str, known_open_tickets: str = "") -> Dict:
+    async def prefilter_resident_request(self, message: str, known_open_tickets: str = "") -> dict:
         """Analyse le message d'un résident pour déterminer s'il s'agit d'une simple question ou d'une panne nécessitant ticket."""
         provider = self.get_provider("general")
 
